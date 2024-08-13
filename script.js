@@ -4,26 +4,25 @@ const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// Configuration Variables
-const G = 6.67430e-11; // Universal Gravitational Constant (m^3 kg^-1 s^-2)
-const speedFactor = 2; // Adjust this value to control the speed (1 is normal speed, <1 is slower, >1 is faster)
-let springConstant = 0.05; // Spring constant for elasticity
-let restLength = 500; // Rest length of the spring
-const dampingFactor = 0.05; // Damping factor for friction
+const G = 6.67430e-11;
+const speedFactor = 2;
+let springConstant = 0.05;
+let restLength = 500;
+const dampingFactor = 0.05;
 
-let planetRadius = 5; // Fixed radius for all planets
-let planetMass = Math.PI * Math.pow(planetRadius, 3); // Mass proportional to volume
+let planetRadius = 5;
+let planetMass = Math.PI * Math.pow(planetRadius, 3);
 
-let lineOpacity = 0.5; // Opacity of the lines
-let planetNumber = 10; // Number of planets
+let lineOpacity = 0.5;
+let planetNumber = 10;
 
-let merging = false; // Flag to control merging
-let collide = true; // Default to true
-let gravity = true; // Default to true, toggle gravity
-let selectedPlanet = null; // Currently selected planet
-let hoveringPlanet = null; // Currently hovered planet
-let dragging = false; // Is a planet being dragged?
-let simulationRunning = true; // Flag to control simulation running state
+let merging = false;
+let collide = true;
+let gravity = true;
+let selectedPlanet = null;
+let hoveringPlanet = null;
+let dragging = false;
+let simulationRunning = true;
 
 class Planet {
     constructor(x, y, color) {
@@ -34,8 +33,8 @@ class Planet {
         this.color = color;
         this.dx = Math.random() * 2 - 1;
         this.dy = Math.random() * 2 - 1;
-        this.selected = false; // Track if this planet is selected
-        this.hover = false; // Track if this planet is hovered
+        this.selected = false;
+        this.hover = false;
     }
 
     draw() {
@@ -45,24 +44,22 @@ class Planet {
         ctx.fill();
         ctx.closePath();
 
-        // Draw selection clue if the planet is selected
         if (this.selected) {
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.radius + 2, 0, Math.PI * 2, false);
-            ctx.strokeStyle = 'yellow'; // Highlight color
-            ctx.lineWidth = 3; // Width of the highlight
+            ctx.strokeStyle = 'yellow';
+            ctx.lineWidth = 3;
             ctx.stroke();
             ctx.closePath();
 
-            // Draw the plus sign
             const plusSize = this.radius * 1.5;
             ctx.beginPath();
             ctx.moveTo(this.x - plusSize, this.y);
             ctx.lineTo(this.x + plusSize, this.y);
             ctx.moveTo(this.x, this.y - plusSize);
             ctx.lineTo(this.x, this.y + plusSize);
-            ctx.strokeStyle = 'yellow'; // Color of the plus sign
-            ctx.lineWidth = 2; // Width of the plus sign
+            ctx.strokeStyle = 'yellow';
+            ctx.lineWidth = 2;
             ctx.stroke();
         }
     }
@@ -74,7 +71,6 @@ class Planet {
                 const distanceY = planets[i].y - this.y;
                 const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
 
-                // Calculate the gravitational force if gravity is enabled
                 let force = 0;
                 if (gravity && distance > 0) {
                     force = (G * this.mass * planets[i].mass) / (distance * distance);
@@ -82,22 +78,19 @@ class Planet {
                 
                 const angle = Math.atan2(distanceY, distanceX);
 
-                // Set the line width based on the gravitational force if gravity is enabled
                 const lineWidth = gravity ? Math.min(10, Math.max(1, force * 1e-10)) : 1;
 
-                ctx.strokeStyle = `rgba(0, 0, 0, ${lineOpacity})`; // Set line color with opacity
+                ctx.strokeStyle = `rgba(0, 0, 0, ${lineOpacity})`;
                 ctx.lineWidth = lineWidth;
                 ctx.beginPath();
                 ctx.moveTo(this.x, this.y);
                 ctx.lineTo(planets[i].x, planets[i].y);
                 ctx.stroke();
 
-                // Calculate the spring force
                 const springForceMagnitude = springConstant * (distance - restLength);
                 const forceX = Math.cos(angle) * springForceMagnitude;
                 const forceY = Math.sin(angle) * springForceMagnitude;
 
-                // Apply the spring force
                 this.applyForce(forceX, forceY);
                 planets[i].applyForce(-forceX, -forceY);
             }
@@ -110,7 +103,6 @@ class Planet {
     }
 
     update(planets) {
-        // Reset forces for each update
         let netFx = 0;
         let netFy = 0;
 
@@ -133,28 +125,23 @@ class Planet {
                     netFy += forceY;
                 }
 
-                // Collision detection and merging based on the flags
                 if (collide && distance < this.radius + planets[i].radius) {
                     if (merging) {
                         mergePlanets(this, planets[i]);
-                        return; // Exit after merging to avoid multiple merges
+                        return;
                     }
                 }
             }
         }
 
-        // Apply damping friction
         this.dx *= (1 - dampingFactor);
         this.dy *= (1 - dampingFactor);
 
-        // Apply net forces
         this.applyForce(netFx, netFy);
 
-        // Update position and velocity
         this.x += this.dx * speedFactor;
         this.y += this.dy * speedFactor;
 
-        // Handle canvas boundary collisions
         if (this.x - this.radius < 0 || this.x + this.radius > canvas.width) {
             this.dx = -this.dx;
         }
@@ -167,17 +154,14 @@ class Planet {
     }
 
     isMouseOver(mx, my) {
-        // Adjust mouse detection to be more accurate
         return Math.sqrt((mx - this.x) ** 2 + (my - this.y) ** 2) <= this.radius;
     }
 }
 
 function mergePlanets(planet1, planet2) {
-    // Calculate new mass and radius
     const newMass = planet1.mass + planet2.mass;
-    const newRadius = planetRadius; // Fixed radius for merged planet
+    const newRadius = planetRadius;
 
-    // Average position and velocity
     const newX = (planet1.x * planet1.mass + planet2.x * planet2.mass) / newMass;
     const newY = (planet1.y * planet1.mass + planet2.y * planet2.mass) / newMass;
     const newDx = (planet1.dx * planet1.mass + planet2.dx * planet2.mass) / newMass;
@@ -217,11 +201,9 @@ function animate() {
     }
 }
 
-// Control Event Listeners
 document.getElementById('planetNumber').addEventListener('input', function() {
     planetNumber = parseInt(this.value);
     document.getElementById('planetNumberValue').textContent = this.value;
-    // Reset planets array
     planets = [];
     for (let i = 0; i < planetNumber; i++) {
         const x = Math.random() * canvas.width;
@@ -234,8 +216,7 @@ document.getElementById('planetNumber').addEventListener('input', function() {
 document.getElementById('planetRadius').addEventListener('input', function() {
     planetRadius = parseFloat(this.value);
     document.getElementById('planetRadiusValue').textContent = this.value;
-    // Update radius and mass of each planet
-    planetMass = Math.PI * Math.pow(planetRadius, 3); // Recalculate mass
+    planetMass = Math.PI * Math.pow(planetRadius, 3);
     planets.forEach(planet => {
         planet.radius = planetRadius;
         planet.mass = planetMass;
@@ -264,7 +245,7 @@ document.getElementById('startSimulation').addEventListener('click', function() 
     } else {
         simulationRunning = true;
         this.textContent = 'Pause Simulation';
-        animate(); // Restart the animation
+        animate();
     }
 });
 
@@ -273,7 +254,6 @@ document.getElementById('endSimulation').addEventListener('click', function() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 });
 
-// Mouse Event Handlers for Selection
 canvas.addEventListener('mousedown', function(e) {
     const rect = canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
@@ -313,5 +293,4 @@ canvas.addEventListener('mouseup', function() {
     dragging = false;
 });
 
-// Start the initial animation
 animate();
